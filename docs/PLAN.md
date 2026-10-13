@@ -202,15 +202,23 @@ Notes:
 
 ## Part 10: AI chat sidebar
 
-- [ ] `ChatSidebar` component: collapsible right sidebar with message list, input and purple send button, using the project color scheme
-- [ ] Keeps conversation history in state and sends it with each message
-- [ ] Loading state while waiting for the AI
-- [ ] When `board_updated` is true, re-fetch `/api/board` so the board refreshes automatically
+- [x] `ChatSidebar` component: collapsible right sidebar with message list, input and purple send button, using the project color scheme
+- [x] Keeps conversation history in state and sends it with each message
+- [x] Loading state while waiting for the AI
+- [x] When `board_updated` is true, re-fetch `/api/board` so the board refreshes automatically
 
 Tests:
-- [ ] Vitest: sends message, renders reply, shows loading, triggers board refresh when `board_updated` is true
-- [ ] Playwright with mocked `/api/ai/chat`: chat round trip and board refresh
-- [ ] Manual live check: ask the AI to add and move cards and see the board update
+- [x] Vitest: sends message, renders reply, shows loading, triggers board refresh when `board_updated` is true
+- [x] Playwright with mocked `/api/ai/chat`: chat round trip and board refresh
+- [x] Manual live check: ask the AI to add and move cards and see the board update
 
 Success criteria:
 - A user can chat with the AI in the sidebar, and AI-driven board changes appear immediately.
+
+Notes:
+- The sidebar starts closed behind a fixed "Open AI chat" button and opens as a fixed overlay on the right, so the board layout and drag and drop are untouched. History lives only in component state and is lost on reload.
+- `KanbanBoard` renders `ChatSidebar` with `onBoardUpdated`, which re-fetches the board and replaces state.
+- A failed request (for example a 429 from the free model) removes the pending message, restores it to the input and shows an error.
+- The message list scrolls to the newest message.
+- The Playwright mock for `/api/ai/chat` creates a real `e2e` card through the API before replying, so the refresh is tested end to end.
+- The Playwright drag test now scrolls the card into view and drops at the card's height. It used to measure positions without scrolling, so it failed once the board was taller than the viewport.

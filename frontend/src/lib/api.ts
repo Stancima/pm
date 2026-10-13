@@ -49,3 +49,20 @@ export const deleteCard = (cardId: string) => send(`/api/cards/${cardId}`, "DELE
 
 export const moveCardTo = (cardId: string, columnId: string, position: number) =>
   send(`/api/cards/${cardId}/move`, "POST", { column_id: columnId, position });
+
+export type ChatMessage = { role: "user" | "assistant"; content: string };
+
+export const sendChat = async (
+  message: string,
+  history: ChatMessage[]
+): Promise<{ reply: string; board_updated: boolean }> => {
+  const response = await fetch("/api/ai/chat", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message, history }),
+  });
+  if (!response.ok) {
+    throw new Error(`POST /api/ai/chat failed: ${response.status}`);
+  }
+  return response.json();
+};

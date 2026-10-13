@@ -64,15 +64,17 @@ test("moves a card between columns and it persists after reload", async ({ page 
   await addCard(columns(page).first(), title);
   const card = cardByText(page, title);
   const targetColumn = columns(page).nth(3);
+  await card.scrollIntoViewIfNeeded();
   const cardBox = await card.boundingBox();
   const columnBox = await targetColumn.boundingBox();
   if (!cardBox || !columnBox) {
     throw new Error("Unable to resolve drag coordinates.");
   }
 
-  await page.mouse.move(cardBox.x + cardBox.width / 2, cardBox.y + cardBox.height / 2);
+  const y = cardBox.y + cardBox.height / 2;
+  await page.mouse.move(cardBox.x + cardBox.width / 2, y);
   await page.mouse.down();
-  await page.mouse.move(columnBox.x + columnBox.width / 2, columnBox.y + 120, { steps: 12 });
+  await page.mouse.move(columnBox.x + columnBox.width / 2, y, { steps: 12 });
   await page.mouse.up();
   await expect(cardByText(targetColumn, title)).toBeVisible();
 

@@ -127,6 +127,24 @@ describe("KanbanBoard", () => {
     expect(within(column).queryByText("First card")).not.toBeInTheDocument();
   });
 
+  it("refreshes the board when the AI updates it", async () => {
+    vi.mocked(api.sendChat).mockResolvedValue({ reply: "Added", board_updated: true });
+    const column = await renderBoard();
+    vi.mocked(api.getBoard).mockResolvedValue(
+      withBacklog((board) => {
+        board.cards["card-3"] = { id: "card-3", title: "AI card", details: "" };
+        board.columns[0].cardIds.push("card-3");
+        return board;
+      })
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Open AI chat" }));
+    await userEvent.type(screen.getByLabelText("Message"), "Add a card");
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await within(column).findByText("AI card")).toBeInTheDocument();
+    expect(api.getBoard).toHaveBeenCalledTimes(2);
+  });
+
   it("calls onLogout when log out is clicked", async () => {
     const onLogout = vi.fn();
     await renderBoard(onLogout);

@@ -15,12 +15,13 @@ Built as a static export (`output: "export"` in `next.config.ts`, output in `out
 - `src/app/layout.tsx` - root layout, loads Space Grotesk (display) and Manrope (body) fonts
 - `src/app/page.tsx` - auth gate: calls `/api/me` on load, renders `LoginForm` when signed out and `KanbanBoard` when signed in
 - `src/app/globals.css` - color scheme as CSS variables (`--accent-yellow`, `--primary-blue`, `--secondary-purple`, `--navy-dark`, `--gray-text`, plus surface/stroke/shadow)
-- `src/lib/api.ts` - fetch helpers: `getMe`, `login`, `logout`, and board calls (`getBoard`, `renameColumn`, `createCard`, `updateCard`, `deleteCard`, `moveCardTo`) that each return the full `BoardData` from the server
+- `src/lib/api.ts` - fetch helpers: `getMe`, `login`, `logout`, board calls (`getBoard`, `renameColumn`, `createCard`, `updateCard`, `deleteCard`, `moveCardTo`) that each return the full `BoardData` from the server, and `sendChat(message, history)` returning `{reply, board_updated}`
 - `src/lib/kanban.ts`
   - Types `Card`, `Column`, `BoardData`. Board is normalized: `columns[]` each hold ordered `cardIds`, and `cards` is a map by id
   - `moveCard(columns, activeId, overId)` - pure function handling reorder within a column and moves across columns (dropping on a card or an empty column)
 - `src/components/`
-  - `KanbanBoard` - loads the board from the API, owns `DndContext`. Every change calls the API and replaces state with the returned board; drag end applies `moveCard` locally first, then saves the card's new column and index. Has a Log out button (`onLogout` prop)
+  - `KanbanBoard` - loads the board from the API, owns `DndContext`. Every change calls the API and replaces state with the returned board; drag end applies `moveCard` locally first, then saves the card's new column and index. Has a Log out button (`onLogout` prop). Renders `ChatSidebar` and re-fetches the board when the AI changes it
+  - `ChatSidebar` - AI chat as a fixed right overlay, opened from an "Open AI chat" button. Keeps the conversation in state and sends it as history, shows "Thinking..." while waiting, shows an error and restores the input on failure, and calls `onBoardUpdated` when `board_updated` is true
   - `LoginForm` - username / password form, shows an error on bad credentials
   - `KanbanColumn` - droppable column with a title input (uncontrolled, keyed on the title) that saves on blur or Enter when changed
   - `KanbanCard` - sortable card with Edit and Remove buttons. Edit mode shows a title / details form and disables dragging
@@ -30,7 +31,9 @@ Built as a static export (`output: "export"` in `next.config.ts`, output in `out
 ## Tests
 
 - `src/lib/kanban.test.ts` - `moveCard` unit tests
-- `src/components/KanbanBoard.test.tsx` - mocks `@/lib/api` with `vi.mock`; load, rename (blur / Enter), add, edit, cancel edit, delete, log out
+- `src/components/KanbanBoard.test.tsx` - mocks `@/lib/api` with `vi.mock`; load, rename (blur / Enter), add, edit, cancel edit, delete, refresh after an AI update, log out
+- `src/components/ChatSidebar.test.tsx` - open / close, send and reply, loading state, history, `onBoardUpdated`, error handling
+- `tests/chat.spec.ts` - Playwright with `/api/ai/chat` mocked via `page.route`; the mock creates an `e2e` card so the board refresh is checked
 - `src/components/LoginForm.test.tsx`, `src/app/page.test.tsx` - login form and auth gate with mocked `fetch`
 - `src/test/board.ts` - shared `testBoard` fixture
 - `tests/kanban.spec.ts` - Playwright: each board change survives a reload. Tests write to the real DB, so they name cards with the `e2e` prefix and `removeTestCards` (in `tests/helpers.ts`) deletes them before and after each test; the rename test restores the title
