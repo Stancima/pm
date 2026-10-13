@@ -11,6 +11,13 @@ FastAPI app managed with uv (Python 3.13). Runs in Docker on port 8000.
 ## Routes
 
 - `GET /api/health` - returns `{"status": "ok"}`
+- `POST /api/login` - `{username, password}`; checks against the hardcoded `USERS` dict (`user` / `password`), stores `username` in the session, 401 on bad credentials
+- `POST /api/logout` - clears the session
+- `GET /api/me` - `{username}` or 401
+
+## Auth
+
+Starlette `SessionMiddleware` keeps a signed httponly `session` cookie. The secret is generated at startup, so sessions reset when the server restarts. `current_user(request)` returns the signed-in username or raises 401; use it in protected routes.
 
 ## Commands
 

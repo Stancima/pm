@@ -69,15 +69,15 @@ Success criteria:
 
 ## Part 4: Fake user sign in
 
-- [ ] Backend: `POST /api/login` checks `user` / `password` and sets an httponly signed session cookie; `POST /api/logout` clears it; `GET /api/me` returns the username or 401
-- [ ] Frontend: on load call `/api/me`; show a login form if 401, otherwise the board
-- [ ] Login form (username, password, purple submit button, error message on bad credentials)
-- [ ] Logout button in the board header
+- [x] Backend: `POST /api/login` checks `user` / `password` and sets an httponly signed session cookie; `POST /api/logout` clears it; `GET /api/me` returns the username or 401
+- [x] Frontend: on load call `/api/me`; show a login form if 401, otherwise the board
+- [x] Login form (username, password, purple submit button, error message on bad credentials)
+- [x] Logout button in the board header
 
 Tests:
-- [ ] pytest: login success sets cookie; bad credentials return 401; `/api/me` with and without cookie; logout clears session
-- [ ] Vitest: login form renders, submits, shows error on failure
-- [ ] Playwright: visiting `/` shows login; bad credentials show error; good credentials show board; logout returns to login; session persists across reload
+- [x] pytest: login success sets cookie; bad credentials return 401; `/api/me` with and without cookie; logout clears session
+- [x] Vitest: login form renders, submits, shows error on failure
+- [x] Playwright: visiting `/` shows login; bad credentials show error; good credentials show board; logout returns to login; session persists across reload
 
 Success criteria:
 - The board is only visible after signing in with `user` / `password`, and logging out hides it.
