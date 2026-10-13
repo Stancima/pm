@@ -8,6 +8,13 @@ static_dir = Path(tempfile.mkdtemp())
 (static_dir / "index.html").write_text("<h1>Kanban Studio</h1>")
 os.environ["STATIC_DIR"] = str(static_dir)
 
+env_file = Path(__file__).parent.parent.parent / ".env"
+if env_file.exists():
+    for line in env_file.read_text().splitlines():
+        key, sep, value = line.partition("=")
+        if sep and not line.startswith("#"):
+            os.environ.setdefault(key.strip(), value.strip())
+
 from fastapi.testclient import TestClient  # noqa: E402
 
 from app.main import app  # noqa: E402

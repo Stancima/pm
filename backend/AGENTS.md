@@ -6,8 +6,9 @@ FastAPI app managed with uv (Python 3.13). Runs in Docker on port 8000.
 
 - `app/main.py` - FastAPI app and routes. API routes live under `/api`; the static site is mounted at `/` (registered last so `/api` takes precedence)
 - `app/db.py` - SQLite access with stdlib `sqlite3` (see `docs/DATABASE.md`). `connect()` creates tables if missing; `board_id_for()` creates the user and seeds the default board on first access; mutation functions return `False` when the id is not on the user's board
+- `app/ai.py` - OpenRouter client (`openai` SDK, model `nvidia/nemotron-3-super-120b-a12b:free`). `get_client()` is a cached dependency that reads `OPENROUTER_API_KEY` on first use; `ask()` sends a single user prompt; `chat()` sends the board chat and returns the parsed `AIResponse`
 - `static/` - the Next.js export, copied in by the Docker build (gitignored). Overridable with the `STATIC_DIR` env var
-- `tests/` - pytest tests using FastAPI `TestClient`. `conftest.py` points `STATIC_DIR` at a temp dir with a stub `index.html`, gives each test its own `DB_PATH`, and provides a signed-in `client` fixture
+- `tests/` - pytest tests using FastAPI `TestClient`. `conftest.py` points `STATIC_DIR` at a temp dir with a stub `index.html`, loads the root `.env` (live AI tests skip without `OPENROUTER_API_KEY`), gives each test its own `DB_PATH`, and provides a signed-in `client` fixture
 
 ## Routes
 
@@ -24,6 +25,11 @@ Board routes require a session (401 otherwise), return 404 for ids not on the us
 - `PATCH /api/cards/{id}` - `{title, details}`
 - `DELETE /api/cards/{id}`
 - `POST /api/cards/{id}/move` - `{column_id, position}`; position is clamped, positions are rewritten to stay contiguous
+
+AI routes require a session:
+
+- `POST /api/ai/test` - asks the model "What is 2+2?" and returns `{reply}`
+- `POST /api/ai/chat` - `{message, history?}` where history is `[{role: "user" | "assistant", content}]`. Sends the rules, the board as nested JSON, the history and the message, and requests Structured Outputs (`AIResponse`: `{reply, board_update}`). A `board_update` replaces the board via `db.replace_board()`; 502 if its column ids differ from the board's. Returns `{reply, board_updated}`
 
 ## Auth
 

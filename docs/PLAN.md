@@ -15,12 +15,12 @@ flowchart LR
 - `.env` (with `OPENROUTER_API_KEY`) is passed to the container with `--env-file`.
 - SQLite file is `/data/kanban.db` (`DB_PATH` env var) on the `pm-data` named volume, so data survives restarts.
 - All board API responses return the full board in the frontend `BoardData` shape; the frontend replaces its state with the response.
-- AI: `openai` Python SDK pointed at `https://openrouter.ai/api/v1`, model `openai/gpt-oss-120b`.
+- AI: `openai` Python SDK pointed at `https://openrouter.ai/api/v1`, model `nvidia/nemotron-3-super-120b-a12b:free` (free tier, supports Structured Outputs). AI routes require a session.
 - Generated or local-only paths are gitignored: `backend/static/`, `*.db`. `.gitattributes` forces LF line endings on `*.sh`.
 
 ## Testing conventions
 
-- Backend: `uv run pytest` in `backend/`.
+- Backend: `uv run pytest` in `backend/`. `conftest.py` loads the root `.env`, so live AI tests run whenever `OPENROUTER_API_KEY` is set and skip otherwise.
 - Frontend unit: `npm run test:unit` in `frontend/`.
 - Frontend e2e: `npm run test:e2e` in `frontend/`. From Part 3 on, Playwright runs against the container at `http://127.0.0.1:8000`, so start it first with the start script.
 - Frontend type check: `npx tsc --noEmit` in `frontend/`.
@@ -163,30 +163,42 @@ Notes:
 
 ## Part 8: AI connectivity
 
-- [ ] Add `openai` dependency; `backend/app/ai.py` creates a client with the OpenRouter base URL and `OPENROUTER_API_KEY`
-- [ ] `POST /api/ai/test`: asks "What is 2+2?" and returns the model reply
+- [x] Add `openai` dependency; `backend/app/ai.py` creates a client with the OpenRouter base URL and `OPENROUTER_API_KEY`
+- [x] `POST /api/ai/test`: asks "What is 2+2?" and returns the model reply
 
 Tests:
-- [ ] pytest (mocked client): route returns the mocked reply
-- [ ] pytest (live, skipped when no key): reply contains "4"
+- [x] pytest (mocked client): route returns the mocked reply; 401 without session
+- [x] pytest (live, skipped when no key): reply contains "4"
 
 Success criteria:
 - A live call through the container returns a reply containing "4".
 
+Notes:
+- Model changed from `openai/gpt-oss-120b`: the paid slug returned 402 (account has no credits) and `openai/gpt-oss-120b:free` returned 404 (no longer offered free). `nvidia/nemotron-3-super-120b-a12b:free` is the closest free model that lists Structured Outputs support, which Part 9 needs. Free models are rate limited, so expect occasional 429s.
+- `ai.get_client()` is a cached FastAPI dependency, created on first use so the app starts without a key. Tests swap it with `app.dependency_overrides`.
+- `/api/ai/test` requires a session, so AI calls stay behind login.
+- `conftest.py` loads the root `.env` without overriding existing env vars. The container reads `.env` only at start, so rerun the start script after changing it.
+
 ## Part 9: AI with board context and Structured Outputs
 
-- [ ] `POST /api/ai/chat` with `{message, history}`
-- [ ] Build messages: system prompt describing the board and rules, board JSON, conversation history, user message
-- [ ] Request Structured Outputs using a Pydantic model `{reply: str, board_update: BoardData | null}`
-- [ ] If `board_update` is present, validate it and save it to the user's board in one transaction: columns stay fixed (existing column ids only, titles may change), cards with unknown ids get new backend-generated ids, cards missing from the update are deleted
-- [ ] Return `{reply, board_updated: bool}`
+- [x] `POST /api/ai/chat` with `{message, history}`
+- [x] Build messages: system prompt describing the board and rules, board JSON, conversation history, user message
+- [x] Request Structured Outputs using a Pydantic model `{reply: str, board_update: AIBoard | null}`
+- [x] If `board_update` is present, validate it and save it to the user's board in one transaction: columns stay fixed (existing column ids only, titles may change), cards with unknown ids get new backend-generated ids, cards missing from the update are deleted
+- [x] Return `{reply, board_updated: bool}`
 
 Tests:
-- [ ] pytest (mocked client): reply only leaves the board unchanged; board update creates, edits and moves cards and is persisted; history and board JSON are included in the request
-- [ ] pytest (live, skipped when no key): asking to add a card results in a new card in the DB
+- [x] pytest (mocked client): reply only leaves the board unchanged; board update creates, edits, moves and deletes cards and renames a column, and is persisted; changed columns return 502 and leave the board unchanged; history and board JSON are included in the request
+- [x] pytest (live, skipped when no key): asking to add a card results in a new card in the DB
 
 Success criteria:
 - Asking the AI to create, edit or move cards changes the persisted board correctly.
+
+Notes:
+- The AI sees and returns the board as nested `AIBoard` (`columns: [{id, title, cards: [{id, title, details}]}]`) rather than `BoardData`, because strict JSON schemas cannot express the `cards` map keyed by id. `ai.nested_board()` converts.
+- `ai.chat()` uses `client.chat.completions.parse(response_format=AIResponse)`. The board JSON is a second system message after the rules.
+- `db.replace_board()` requires the update's column ids to match the board's exactly, in order; otherwise nothing is written and the route returns 502. New cards use an empty id; an unknown or repeated id also becomes a new card.
+- Verified through the container: the AI added a card, then moved it to another column with its id kept.
 
 ## Part 10: AI chat sidebar
 

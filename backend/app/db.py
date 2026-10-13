@@ -196,3 +196,27 @@ def move_card(
     if source_id != column_id:
         write_positions(conn, source_id, card_ids_in(conn, source_id))
     return True
+
+
+def replace_board(conn: sqlite3.Connection, board_id: int, columns: list[dict]) -> bool:
+    board = get_board(conn, board_id)
+    if [c["id"] for c in columns] != [c["id"] for c in board["columns"]]:
+        return False
+    kept = set()
+    for column in columns:
+        conn.execute("UPDATE columns SET title = ? WHERE id = ?", (column["title"], column["id"]))
+        for position, card in enumerate(column["cards"]):
+            if card["id"] in board["cards"] and card["id"] not in kept:
+                kept.add(card["id"])
+                conn.execute(
+                    "UPDATE cards SET column_id = ?, title = ?, details = ?, position = ? WHERE id = ?",
+                    (column["id"], card["title"], card["details"], position, card["id"]),
+                )
+            else:
+                conn.execute(
+                    "INSERT INTO cards (id, column_id, title, details, position) VALUES (?, ?, ?, ?, ?)",
+                    (new_id("card"), column["id"], card["title"], card["details"], position),
+                )
+    for card_id in board["cards"].keys() - kept:
+        conn.execute("DELETE FROM cards WHERE id = ?", (card_id,))
+    return True

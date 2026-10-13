@@ -6,10 +6,11 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
+from openai import OpenAI
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import db
+from app import ai, db
 
 STATIC_DIR = Path(os.environ.get("STATIC_DIR", Path(__file__).parent.parent / "static"))
 USERS = {"user": "password"}
@@ -43,6 +44,11 @@ class CardMove(BaseModel):
     position: int
 
 
+class ChatRequest(BaseModel):
+    message: str
+    history: list[ai.Message] = []
+
+
 def current_user(request: Request) -> str:
     username = request.session.get("username")
     if not username:
@@ -61,6 +67,7 @@ def get_conn():
 
 Conn = Annotated[sqlite3.Connection, Depends(get_conn)]
 User = Annotated[str, Depends(current_user)]
+AIClient = Annotated[OpenAI, Depends(ai.get_client)]
 
 
 def check_found(found: bool, what: str) -> None:
@@ -130,6 +137,22 @@ def move_card(card_id: str, body: CardMove, username: User, conn: Conn):
     board_id = db.board_id_for(conn, username)
     check_found(db.move_card(conn, board_id, card_id, body.column_id, body.position), "Card or column")
     return db.get_board(conn, board_id)
+
+
+@app.post("/api/ai/test")
+def ai_test(username: User, client: AIClient):
+    return {"reply": ai.ask(client, "What is 2+2?")}
+
+
+@app.post("/api/ai/chat")
+def ai_chat(body: ChatRequest, username: User, conn: Conn, client: AIClient):
+    board_id = db.board_id_for(conn, username)
+    result = ai.chat(client, db.get_board(conn, board_id), body.history, body.message)
+    if result.board_update:
+        columns = result.board_update.model_dump()["columns"]
+        if not db.replace_board(conn, board_id, columns):
+            raise HTTPException(status_code=502, detail="AI changed the board columns")
+    return {"reply": result.reply, "board_updated": result.board_update is not None}
 
 
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
