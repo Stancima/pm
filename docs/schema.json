@@ -1,0 +1,45 @@
+{
+  "database": "sqlite",
+  "pragmas": ["foreign_keys = ON"],
+  "tables": {
+    "users": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY",
+        "username": "TEXT NOT NULL UNIQUE"
+      }
+    },
+    "boards": {
+      "columns": {
+        "id": "INTEGER PRIMARY KEY",
+        "user_id": "INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE",
+        "title": "TEXT NOT NULL"
+      },
+      "notes": "UNIQUE on user_id enforces one board per user for the MVP; drop it to allow multiple boards."
+    },
+    "columns": {
+      "columns": {
+        "id": "TEXT PRIMARY KEY",
+        "board_id": "INTEGER NOT NULL REFERENCES boards(id) ON DELETE CASCADE",
+        "title": "TEXT NOT NULL",
+        "position": "INTEGER NOT NULL"
+      },
+      "notes": "id looks like 'col-<hex>'. position is 0-based order on the board."
+    },
+    "cards": {
+      "columns": {
+        "id": "TEXT PRIMARY KEY",
+        "column_id": "TEXT NOT NULL REFERENCES columns(id) ON DELETE CASCADE",
+        "title": "TEXT NOT NULL",
+        "details": "TEXT NOT NULL DEFAULT ''",
+        "position": "INTEGER NOT NULL"
+      },
+      "notes": "id looks like 'card-<hex>'. position is 0-based and kept contiguous within a column."
+    }
+  },
+  "api_board_shape": {
+    "columns": [{ "id": "col-1a2b", "title": "Backlog", "cardIds": ["card-3c4d"] }],
+    "cards": {
+      "card-3c4d": { "id": "card-3c4d", "title": "Align roadmap themes", "details": "Draft quarterly themes." }
+    }
+  }
+}

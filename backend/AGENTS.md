@@ -4,9 +4,10 @@ FastAPI app managed with uv (Python 3.13). Runs in Docker on port 8000.
 
 ## Structure
 
-- `app/main.py` - FastAPI app. API routes live under `/api`; the static site is mounted at `/` (registered last so `/api` takes precedence)
+- `app/main.py` - FastAPI app and routes. API routes live under `/api`; the static site is mounted at `/` (registered last so `/api` takes precedence)
+- `app/db.py` - SQLite access with stdlib `sqlite3` (see `docs/DATABASE.md`). `connect()` creates tables if missing; `board_id_for()` creates the user and seeds the default board on first access; mutation functions return `False` when the id is not on the user's board
 - `static/` - the Next.js export, copied in by the Docker build (gitignored). Overridable with the `STATIC_DIR` env var
-- `tests/` - pytest tests using FastAPI `TestClient`. `conftest.py` points `STATIC_DIR` at a temp dir with a stub `index.html`
+- `tests/` - pytest tests using FastAPI `TestClient`. `conftest.py` points `STATIC_DIR` at a temp dir with a stub `index.html`, gives each test its own `DB_PATH`, and provides a signed-in `client` fixture
 
 ## Routes
 
@@ -15,9 +16,22 @@ FastAPI app managed with uv (Python 3.13). Runs in Docker on port 8000.
 - `POST /api/logout` - clears the session
 - `GET /api/me` - `{username}` or 401
 
+Board routes require a session (401 otherwise), return 404 for ids not on the user's board, and all return the full board in the frontend `BoardData` shape:
+
+- `GET /api/board`
+- `PATCH /api/columns/{id}` - `{title}`
+- `POST /api/cards` - `{column_id, title, details?}`, appended to the column
+- `PATCH /api/cards/{id}` - `{title, details}`
+- `DELETE /api/cards/{id}`
+- `POST /api/cards/{id}/move` - `{column_id, position}`; position is clamped, positions are rewritten to stay contiguous
+
 ## Auth
 
-Starlette `SessionMiddleware` keeps a signed httponly `session` cookie. The secret is generated at startup, so sessions reset when the server restarts. `current_user(request)` returns the signed-in username or raises 401; use it in protected routes.
+Starlette `SessionMiddleware` keeps a signed httponly `session` cookie. The secret is generated at startup, so sessions reset when the server restarts. `current_user(request)` returns the signed-in username or raises 401; routes use it via the `User` dependency.
+
+## Database
+
+`DB_PATH` env var; defaults to `backend/kanban.db` locally and is `/data/kanban.db` in Docker (the `pm-data` volume). Each request gets a connection from `get_conn`, wrapped in a transaction that commits on success and rolls back on error.
 
 ## Commands
 

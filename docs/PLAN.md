@@ -84,45 +84,45 @@ Success criteria:
 
 ## Part 5: Database modeling
 
-- [ ] Propose schema: `users`, `boards` (one per user), `columns` (board_id, title, position), `cards` (column_id, title, details, position)
-- [ ] Save the schema as `docs/schema.json`
-- [ ] Document the approach in `docs/DATABASE.md` (stdlib `sqlite3`, no ORM, tables created and default board seeded on first access, DB file path)
-- [ ] User reviews and signs off
+- [x] Propose schema: `users`, `boards` (one per user), `columns` (board_id, title, position), `cards` (column_id, title, details, position)
+- [x] Save the schema as `docs/schema.json`
+- [x] Document the approach in `docs/DATABASE.md` (stdlib `sqlite3`, no ORM, tables created and default board seeded on first access, DB file path)
+- [x] User reviews and signs off
 
 Success criteria:
 - User has approved the schema.
 
 ## Part 6: Backend
 
-- [ ] `backend/app/db.py`: connect, create tables if missing, seed user and default board (5 columns, sample cards) on first access
-- [ ] `GET /api/board`: board for the signed-in user in the frontend `BoardData` shape
-- [ ] `PATCH /api/columns/{id}`: rename column
-- [ ] `POST /api/cards`: create card in a column
-- [ ] `PATCH /api/cards/{id}`: edit title and details
-- [ ] `DELETE /api/cards/{id}`: delete card
-- [ ] `POST /api/cards/{id}/move`: move to `column_id` at `position`, reordering positions
-- [ ] All routes require a session and only touch the user's own board
+- [x] `backend/app/db.py`: connect, create tables if missing, seed user and default board (5 columns, sample cards) on first access
+- [x] `GET /api/board`: board for the signed-in user in the frontend `BoardData` shape
+- [x] `PATCH /api/columns/{id}`: rename column
+- [x] `POST /api/cards`: create card in a column
+- [x] `PATCH /api/cards/{id}`: edit title and details
+- [x] `DELETE /api/cards/{id}`: delete card
+- [x] `POST /api/cards/{id}/move`: move to `column_id` at `position`, reordering positions
+- [x] All routes require a session and only touch the user's own board
 
 Tests:
-- [ ] pytest with a temporary DB file for each test
-- [ ] DB is created when missing and seeded once
-- [ ] Each route: happy path, 401 without session, 404 for unknown ids
-- [ ] Move: within a column and across columns, positions stay contiguous
+- [x] pytest with a temporary DB file for each test
+- [x] DB is created when missing and seeded once
+- [x] Each route: happy path, 401 without session, 404 for unknown ids
+- [x] Move: within a column and across columns, positions stay contiguous
 
 Success criteria:
 - All board operations persist in SQLite and survive a server restart.
 
 ## Part 7: Frontend + Backend
 
-- [ ] `frontend/src/lib/api.ts`: typed fetch helpers for each board route
-- [ ] `KanbanBoard` loads the board from the API instead of `initialData`
-- [ ] Rename, add, delete and move call the API and update local state
-- [ ] Add card editing: click a card to edit title and details inline, save via API
-- [ ] Column rename is saved on blur or Enter (not every keystroke)
+- [x] `frontend/src/lib/api.ts`: typed fetch helpers for each board route
+- [x] `KanbanBoard` loads the board from the API instead of `initialData`
+- [x] Rename, add, delete and move call the API and update local state
+- [x] Add card editing: Edit button on each card opens an inline title and details form, saved via API
+- [x] Column rename is saved on blur or Enter (not every keystroke)
 
 Tests:
-- [ ] Vitest: components with mocked `fetch` (load, rename, add, edit, delete, move)
-- [ ] Playwright: each operation survives a page reload; edit a card; drag a card and reload
+- [x] Vitest: components with a mocked API module (load, rename, add, edit, delete); move is covered by `moveCard` unit tests and Playwright
+- [x] Playwright: each operation survives a page reload; edit a card; drag a card and reload
 
 Success criteria:
 - The board is fully persistent: every change remains after reload and container restart.

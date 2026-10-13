@@ -177,3 +177,5 @@ cython_debug/
 # Frontend export copied in by the Docker build
 backend/static/
 
+*.db
+
