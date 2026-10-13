@@ -2,6 +2,8 @@
 
 Next.js 16 (App Router) client-only Kanban demo. No backend, auth or persistence yet.
 
+Built as a static export (`output: "export"` in `next.config.ts`, output in `out/`). The Docker build copies `out/` into the backend, which serves it at `/`.
+
 ## Stack
 
 - Next.js 16.1.6, React 19.2, TypeScript, Tailwind CSS 4
@@ -36,6 +38,6 @@ Next.js 16 (App Router) client-only Kanban demo. No backend, auth or persistence
 - `src/lib/kanban.test.ts` - `moveCard` unit tests
 - `src/components/KanbanBoard.test.tsx` - renders columns, renames a column, adds and removes a card
 - `tests/kanban.spec.ts` - Playwright: loads board, adds a card, drags a card between columns
-- `playwright.config.ts` currently starts `npm run dev` on `127.0.0.1:3000`
+- `playwright.config.ts` targets the Docker container at `127.0.0.1:8000`; start it first with `scripts/start`
 
 Commands: `npm run test:unit`, `npm run test:e2e`, `npm run test:all`.

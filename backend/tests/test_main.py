@@ -11,7 +11,7 @@ def test_health():
     assert response.json() == {"status": "ok"}
 
 
-def test_index():
+def test_index_serves_static_site():
     response = client.get("/")
     assert response.status_code == 200
-    assert "Hello world" in response.text
+    assert "Kanban Studio" in response.text

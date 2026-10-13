@@ -54,15 +54,15 @@ Success criteria:
 
 ## Part 3: Add in Frontend
 
-- [ ] Set `output: "export"` in `frontend/next.config.ts`
-- [ ] Add a Node build stage to the Dockerfile that runs `npm ci && npm run build`, and copy `frontend/out` into the Python stage
-- [ ] FastAPI mounts the exported site at `/` (after `/api` routes); remove the hello world page
-- [ ] Point Playwright `baseURL` at `http://127.0.0.1:8000` and drop the `npm run dev` web server
+- [x] Set `output: "export"` in `frontend/next.config.ts`
+- [x] Add a Node build stage to the Dockerfile that runs `npm ci && npm run build`, and copy `frontend/out` into the Python stage
+- [x] FastAPI mounts the exported site at `/` (after `/api` routes); remove the hello world page
+- [x] Point Playwright `baseURL` at `http://127.0.0.1:8000` and drop the `npm run dev` web server
 
 Tests:
-- [ ] Existing Vitest tests pass
-- [ ] Existing Playwright tests pass against the container (load board, add card, drag card)
-- [ ] pytest: `/` returns HTML containing the app, `/api/health` still works
+- [x] Existing Vitest tests pass
+- [x] Existing Playwright tests pass against the container (load board, add card, drag card)
+- [x] pytest: `/` returns HTML containing the app, `/api/health` still works
 
 Success criteria:
 - The demo Kanban board is displayed at `http://localhost:8000/` from the container.
