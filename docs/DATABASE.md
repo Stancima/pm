@@ -33,5 +33,5 @@ A move takes `column_id` and `position`. The backend removes the card from its o
 ## Lifecycle
 
 - DB file: `DB_PATH` env var. The default is `backend/kanban.db` locally; in Docker it is `/data/kanban.db` on the `pm-data` volume, so data survives restarts.
-- On startup the tables are created if they don't exist (`CREATE TABLE IF NOT EXISTS`).
+- Every connection runs `CREATE TABLE IF NOT EXISTS`, so the DB file and tables are created on first use.
 - The first time a user's board is requested, the user row and a default board are created. The default board has the five columns (Backlog, Discovery, In Progress, Review, Done) and the current sample cards.
